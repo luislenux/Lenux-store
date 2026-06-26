@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -153,7 +154,7 @@
 
 <div style="text-align: center; margin: 20px auto; padding: 15px; background: #1e293b; border: 1px dashed var(--primary); max-width: 900px; border-radius: 12px;">
     <p style="color: #94a3b8; margin: 0; font-size: 12px;">PUBLICIDADE</p>
-    </div>
+</div>
 
 <div class="container">
     <h1 style="text-align: center; user-select: none;">
@@ -242,7 +243,7 @@
                         </tr>
                     </thead>
                     <tbody id="lista-usuarios-anuncios">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
             
@@ -260,6 +261,7 @@
 </div>
 
 <script>
+    // Lembre-se de ajustar este e-mail para incluir o @ corretamente, ex: "dfl@gmail.com"
     const DONO_SUPREMO = "dflgmail.com";
 
     // --- PROGRAMAÇÃO DO CONTADOR DE ANÚNCIOS ---
@@ -279,7 +281,6 @@
         return { historico, email };
     }
 
-    // ESTA FUNÇÃO DEVE SER CHAMADA AUTOMATICAMENTE PELO SCRIPT DE ANÚNCIO REAL
     function registrarAnuncioAssistido() {
         let { historico, email } = obterDadosAnuncios();
         let usuarioDados = historico[email];
@@ -346,7 +347,6 @@
             renderizarRelatorioAdmin();
         }
     }
-    // --------------------------------------------
 
     function obterListaAdmins() {
         let admins = JSON.parse(localStorage.getItem('lenux_admins_lista') || '[]');
@@ -637,4 +637,3 @@
 </script>
 </body>
 </html>
-
