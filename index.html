@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lenux OS - Ultimate Store</title>
+    <style>
+        :root {
+            --background: #0f172a;
+            --surface: #1e293b;
+            --border: #334155;
+            --text: #f8fafc;
+            --primary: #3ddc84; 
+            --success: #10b981; 
+            --danger: #ef4444;
+            --admin: #a855f7;
+            --warning: #eab308;
+        }
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            font-family: sans-serif;
+            margin: 0;
+            padding: 15px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; }
+        .nav button {
+            flex: 1;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .nav button:hover {
+            border-color: var(--primary);
+        }
+        .secao { display: none; }
+        .secao.ativa { display: block; }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        .barra-busca {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .barra-busca input {
+            padding-left: 20px;
+            border-radius: 25px;
+            background: #1e293b;
+            border: 1px solid var(--primary);
+        }
+        .btn-principal {
+            background: var(--primary);
+            color: #0f172a; 
+            border: none;
+            padding: 12px;
+            border-radius: 25px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+        .btn-perigo { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; }
+        .btn-sucesso { background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; }
+        .grade-apps {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+            padding: 5px 0;
+        }
+        .card-app {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 16px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+        .app-icone {
+            width: 75px;
+            height: 75px;
+            background: #334155;
+            border-radius: 18px;
+            margin: 0 auto 10px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        .app-titulo {
+            font-size: 0.95rem;
+            font-weight: bold;
+            margin: 4px 0;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .app-info { font-size: 0.75rem; color: #94a3b8; margin-bottom: 10px; }
+        .app-detalhes { text-align: left; border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px; font-size: 0.8rem; }
+        .bloco-aval { background: #111827; padding: 6px; border-radius: 6px; margin-top: 5px; }
+        #container-sandbox {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.98);
+            z-index: 9999;
+            flex-direction: column;
+        }
+        iframe { flex: 1; border: none; background: white; }
+        .item-admin {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #111827;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+        .tabela-usuarios {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.85rem;
+        }
+        .tabela-usuarios th, .tabela-usuarios td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            text-align: left;
+        }
+        .tabela-usuarios th {
+            background: #111827;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+<div style="text-align: center; margin: 20px auto; padding: 15px; background: #1e293b; border: 1px dashed var(--primary); max-width: 900px; border-radius: 12px;">
+    <p style="color: #94a3b8; margin: 0; font-size: 12px;">PUBLICIDADE</p>
+    </div>
+
+<div class="container">
+    <h1 style="text-align: center; user-select: none;">
+        Lenux Store 🚀 
+        <span id="badge-admin" style="display:none; font-size:0.8rem; background:var(--admin); padding:4px 8px; border-radius:20px; color:white;">ADMIN</span>
+    </h1>
+
+    <div style="background: var(--surface); padding: 15px; border-radius: 16px; margin-bottom: 20px; border: 1px solid var(--border); text-align: center;">
+        <h3 style="margin-top: 0; color: var(--primary);">📺 Seu Progresso de Anúncios</h3>
+        <div style="display: flex; justify-content: space-around; font-size: 0.9rem;">
+            <div>Assistidos: <strong id="txt-anuncios-total" style="color: var(--text);">0</strong></div>
+            <div>Recompensa: <strong id="txt-recompensa" style="color: var(--success);">0</strong></div>
+            <div>Restam: <strong id="txt-restante" style="color: var(--warning);">300</strong></div>
+        </div>
+    </div>
+    
+    <div class="nav">
+        <button onclick="mudarAba('explorar')">Apps 📱</button>
+        <button onclick="mudarAba('criar')">Publicar 📤</button>
+        <button onclick="mudarAba('perfil')">Perfil 👤</button>
+    </div>
+    
+    <div id="explorar" class="secao ativa">
+        <div class="barra-busca">
+            <input type="text" id="campo-busca" placeholder="Procurar um app ou jogo desejado..." oninput="carregarApps()">
+        </div>
+        <h2>Aplicativos e Jogos</h2>
+        <div id="lista-apps" class="grade-apps"></div>
+    </div>
+    
+    <div id="criar" class="secao">
+        <h2 id="titulo-form">Publicar Novo App</h2>
+        <input type="hidden" id="app-id-edicao" value="">
+        <input type="text" id="app-nome" placeholder="Nome do App ou Jogo">
+        <input type="text" id="app-imagem" placeholder="Emoji para o Ícone (Ex: 🎮, 🌐)">
+        <textarea id="app-codigo" rows="8" placeholder="Cole aqui o código HTML do seu app..."></textarea>
+        <button class="btn-principal" id="btn-salvar" onclick="salvarApp()">Publicar Agora</button>
+    </div>
+    
+    <div id="perfil" class="secao">
+        <h2>Seu Perfil de Dev</h2>
+        <div style="background: var(--surface); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+            <div id="bloco-login">
+                <h3>Faça Login para usar o Sistema:</h3>
+                <input type="text" id="login-nome" placeholder="Seu Nome">
+                <input type="email" id="login-gmail" placeholder="Seu E-mail de Acesso">
+                <input type="number" id="login-idade" placeholder="Sua Idade">
+                
+                <h4 style="margin: 15px 0 5px 0; color: var(--primary);">Dados para Recebimento:</h4>
+                <input type="text" id="login-pix" placeholder="Sua Chave PIX (CPF, E-mail, Telefone ou Aleatória)">
+                
+                <button class="btn-principal" onclick="realizarLoginComum()">Entrar na Conta</button>
+            </div>
+            <div id="bloco-logado" style="display: none; text-align: center;">
+                <p>Usuário: <strong id="nome-ativo">Visitante</strong></p>
+                <p>E-mail: <span id="gmail-ativo" style="color: var(--primary);"></span></p>
+                <p>Chave PIX: <span id="pix-ativo" style="color: var(--warning);">Não cadastrada</span></p>
+                <p>Status: <span id="idade-status"></span></p>
+                <button class="btn-perigo" onclick="logout()">Desconectar</button>
+            </div>
+        </div>
+        
+        <div id="painel-supremo" style="display: none; margin-top: 20px; background: var(--surface); padding: 20px; border-radius: 12px; border: 2px dashed var(--admin);">
+            <h3 style="color: var(--admin); margin-top: 0;">👑 Painel Admin (Dono Supremo)</h3>
+            
+            <h4 style="color: var(--text); margin-bottom: 5px;">Promover Novo Administrador:</h4>
+            <div style="display: flex; gap: 5px; margin-bottom: 20px;">
+                <input type="email" id="novo-admin-gmail" placeholder="E-mail do novo Admin" style="margin: 0;">
+                <button class="btn-principal" style="background: var(--admin); color: white; width: auto; padding: 0 20px;" onclick="adicionarNovoAdmin()">Promover</button>
+            </div>
+            
+            <div id="lista-admins-visual" style="color: #cbd5e1; margin-bottom: 20px;"></div>
+
+            <hr style="border-color: var(--border); margin: 20px 0;">
+
+            <h4 style="color: var(--primary); margin-top: 0;">📊 Relatório de Usuários, Anúncios e PIX:</h4>
+            <div style="overflow-x: auto;">
+                <table class="tabela-usuarios">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>E-mail</th>
+                            <th>PIX Cadastrado</th>
+                            <th>Anúncios Vistos</th>
+                            <th>Recompensa Acumulada</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-usuarios-anuncios">
+                        </tbody>
+                </table>
+            </div>
+            
+            <button class="btn-perigo" style="width: 100%; margin-top: 20px; font-weight: bold; padding: 10px;" onclick="reiniciarMesAnuncios()"> ZERAR ANÚNCIOS DO MÊS </button>
+        </div>
+    </div>
+</div>
+
+<div id="container-sandbox">
+    <div style="padding: 12px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);">
+        <strong id="sandbox-titulo">Executando...</strong>
+        <button class="btn-perigo" onclick="fecharAppIsolado()">Sair do App</button>
+    </div>
+    <iframe id="sandbox-visor" sandbox="allow-scripts"></iframe>
+</div>
+
+<script>
+    const DONO_SUPREMO = "dflgmail.com";
+
+    // --- PROGRAMAÇÃO DO CONTADOR DE ANÚNCIOS ---
+    function obterDadosAnuncios() {
+        const email = localStorage.getItem('lenux_user_email') || 'visitante';
+        let historico = JSON.parse(localStorage.getItem('lenux_controle_anuncios') || '{}');
+        
+        if (!historico[email]) {
+            historico[email] = {
+                nome: localStorage.getItem('lenux_user') || 'Visitante',
+                pix: localStorage.getItem('lenux_user_pix') || 'Não cadastrado',
+                contadorTotal: 0,
+                recompensaAcumulada: 0,
+                proximaMeta: 300
+            };
+        }
+        return { historico, email };
+    }
+
+    // ESTA FUNÇÃO DEVE SER CHAMADA AUTOMATICAMENTE PELO SCRIPT DE ANÚNCIO REAL
+    function registrarAnuncioAssistido() {
+        let { historico, email } = obterDadosAnuncios();
+        let usuarioDados = historico[email];
+
+        usuarioDados.nome = localStorage.getItem('lenux_user') || 'Visitante';
+        usuarioDados.pix = localStorage.getItem('lenux_user_pix') || 'Não cadastrado';
+
+        usuarioDados.contadorTotal += 1;
+
+        if (usuarioDados.contadorTotal >= usuarioDados.proximaMeta) {
+            usuarioDados.recompensaAcumulada += 6;
+            usuarioDados.proximaMeta += 300; 
+            alert(`🎉 Incrível! Você assistiu ${usuarioDados.contadorTotal} anúncios e ganhou +6 de bônus!`);
+        }
+
+        localStorage.setItem('lenux_controle_anuncios', JSON.stringify(historico));
+        atualizarPainelAnunciosVisual();
+        if(localStorage.getItem('lenux_user_email') === DONO_SUPREMO) renderizarRelatorioAdmin();
+    }
+
+    function atualizarPainelAnunciosVisual() {
+        const { historico, email } = obterDadosAnuncios();
+        const dados = historico[email];
+
+        if (document.getElementById('txt-anuncios-total')) {
+            document.getElementById('txt-anuncios-total').innerText = dados.contadorTotal;
+            document.getElementById('txt-recompensa').innerText = dados.recompensaAcumulada;
+            
+            let faltam = dados.proximaMeta - dados.contadorTotal;
+            document.getElementById('txt-restante').innerText = faltam;
+        }
+    }
+
+    function renderizarRelatorioAdmin() {
+        const historico = JSON.parse(localStorage.getItem('lenux_controle_anuncios') || '{}');
+        const tabelaCorpo = document.getElementById('lista-usuarios-anuncios');
+        if(!tabelaCorpo) return;
+
+        let htmlTabela = '';
+        for (let email in historico) {
+            const dados = historico[email];
+            htmlTabela += `
+                <tr>
+                    <td>${dados.nome}</td>
+                    <td style="color: var(--primary);">${email}</td>
+                    <td style="color: var(--warning); font-family: monospace;">${dados.pix || 'Não informado'}</td>
+                    <td><b>${dados.contadorTotal}</b></td>
+                    <td style="color: var(--success);">+${dados.recompensaAcumulada}</td>
+                </tr>
+            `;
+        }
+
+        if(htmlTabela === '') {
+            htmlTabela = '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Nenhum registro de anúncios encontrado.</td></tr>';
+        }
+        tabelaCorpo.innerHTML = htmlTabela;
+    }
+
+    function reiniciarMesAnuncios() {
+        if (confirm("Deseja zerar os anúncios de todos os usuários para iniciar o fim do mês?")) {
+            localStorage.removeItem('lenux_controle_anuncios');
+            alert("Contadores reiniciados com sucesso!");
+            atualizarPainelAnunciosVisual();
+            renderizarRelatorioAdmin();
+        }
+    }
+    // --------------------------------------------
+
+    function obterListaAdmins() {
+        let admins = JSON.parse(localStorage.getItem('lenux_admins_lista') || '[]');
+        if (!admins.includes(DONO_SUPREMO)) admins.push(DONO_SUPREMO);
+        return admins;
+    }
+    function mudarAba(id) {
+        document.querySelectorAll('.secao').forEach(s => s.classList.remove('ativa'));
+        document.getElementById(id).classList.add('ativa');
+    }
+    function realizarLoginComum() {
+        const nome = document.getElementById('login-nome').value.trim();
+        const gmail = document.getElementById('login-gmail').value.trim().toLowerCase();
+        const idadeInput = document.getElementById('login-idade').value;
+        const pix = document.getElementById('login-pix').value.trim() || 'Não cadastrado';
+        
+        if(!nome || !gmail || !idadeInput) return alert("Preencha todos os campos obrigatórios!");
+        let idade = parseInt(idadeInput);
+        if(gmail === DONO_SUPREMO) {
+            idade = 99;
+        } else if(idade < 13) {
+            return alert("Mínimo de 13 anos exigido.");
+        }
+        
+        localStorage.setItem('lenux_user', gmail === DONO_SUPREMO ? "Dono Supremo" : nome);
+        localStorage.setItem('lenux_user_email', gmail);
+        localStorage.setItem('lenux_user_idade', idade);
+        localStorage.setItem('lenux_user_pix', pix);
+        
+        let historico = JSON.parse(localStorage.getItem('lenux_controle_anuncios') || '{}');
+        if (!historico[gmail]) {
+            historico[gmail] = { nome: nome, pix: pix, contadorTotal: 0, recompensaAcumulada: 0, proximaMeta: 300 };
+        } else {
+            historico[gmail].nome = nome;
+            historico[gmail].pix = pix;
+        }
+        localStorage.setItem('lenux_controle_anuncios', JSON.stringify(historico));
+
+        atualizarInterfacePerfil();
+        alert(gmail === DONO_SUPREMO ? "👑 Modo Administrador Ativado!" : "Login efetuado com sucesso!");
+        carregarApps();
+        atualizarPainelAnunciosVisual();
+    }
+    function atualizarInterfacePerfil() {
+        const nome = localStorage.getItem('lenux_user');
+        const gmail = localStorage.getItem('lenux_user_email');
+        const idade = localStorage.getItem('lenux_user_idade');
+        const pix = localStorage.getItem('lenux_user_pix');
+        const badgeAdmin = document.getElementById('badge-admin');
+        const painelSupremo = document.getElementById('painel-supremo');
+        const admins = obterListaAdmins();
+        
+        if(nome && gmail) {
+            document.getElementById('bloco-login').style.display = 'none';
+            document.getElementById('bloco-logado').style.display = 'block';
+            document.getElementById('nome-ativo').innerText = nome;
+            document.getElementById('gmail-ativo').innerText = gmail;
+            document.getElementById('pix-ativo').innerText = pix || 'Não cadastrada';
+            
+            if(admins.includes(gmail) || gmail === DONO_SUPREMO) {
+                document.getElementById('idade-status').innerText = "Admin 🛠️";
+                document.getElementById('idade-status').style.color = "var(--admin)";
+                badgeAdmin.style.display = 'inline';
+            } else {
+                document.getElementById('idade-status').innerText = `${idade} anos`;
+                document.getElementById('idade-status').style.color = "var(--success)";
+                badgeAdmin.style.display = 'none';
+            }
+            
+            painelSupremo.style.display = (gmail === DONO_SUPREMO) ? 'block' : 'none';
+            if(gmail === DONO_SUPREMO) {
+                renderizarListaAdmins();
+                renderizarRelatorioAdmin();
+            }
+        } else {
+            document.getElementById('bloco-login').style.display = 'block';
+            document.getElementById('bloco-logado').style.display = 'none';
+            badgeAdmin.style.display = 'none';
+            painelSupremo.style.display = 'none';
+        }
+    }
+    function adicionarNovoAdmin() {
+        const novoGmail = document.getElementById('novo-admin-gmail').value.trim().toLowerCase();
+        let admins = obterListaAdmins();
+        if(!novoGmail.includes("@") && !novoGmail.includes(".com")) return alert("Formato inválido!");
+        if(admins.includes(novoGmail)) return alert("Este usuário já possui permissão!");
+        admins.push(novoGmail);
+        localStorage.setItem('lenux_admins_lista', JSON.stringify(admins));
+        document.getElementById('novo-admin-gmail').value = '';
+        renderizarListaAdmins();
+        alert("Permissão concedida com sucesso!");
+    }
+    function revogarAdmin(emailRevogar) {
+        if(emailRevogar === DONO_SUPREMO) return alert("Ação não permitida para a conta principal!");
+        if(!confirm("Remover permissões deste usuário?")) return;
+        let admins = obterListaAdmins();
+        admins = admins.filter(adm => adm !== emailRevogar);
+        localStorage.setItem('lenux_admins_lista', JSON.stringify(admins));
+        renderizarListaAdmins();
+        alert("Permissão revogada!");
+    }
+    function renderizarListaAdmins() {
+        const admins = obterListaAdmins();
+        const listaVisual = document.getElementById('lista-admins-visual');
+        let htmlAdmins = '';
+        admins.forEach(adm => { 
+            htmlAdmins += `
+            <div class="item-admin">
+                <span>${adm === DONO_SUPREMO ? '👑 Conta Principal' : adm}</span>
+                ${adm !== DONO_SUPREMO ? `<button class="btn-perigo" onclick="revogarAdmin('${adm}')">Revogar</button>` : ''}
+            </div>`; 
+        });
+        listaVisual.innerHTML = htmlAdmins;
+    }
+    function logout() {
+        localStorage.removeItem('lenux_user');
+        localStorage.removeItem('lenux_user_email');
+        localStorage.removeItem('lenux_user_idade');
+        localStorage.removeItem('lenux_user_pix');
+        atualizarInterfacePerfil();
+        carregarApps();
+        atualizarPainelAnunciosVisual();
+    }
+    function salvarApp() {
+        const emailLogado = localStorage.getItem('lenux_user_email');
+        if (!emailLogado) {
+            alert("Faça login na aba Perfil antes de publicar!");
+            mudarAba('perfil');
+            return;
+        }
+        const idEdicao = document.getElementById('app-id-edicao').value;
+        const nome = document.getElementById('app-nome').value.trim();
+        const imagem = document.getElementById('app-imagem').value.trim() || '📱';
+        const codigo = document.getElementById('app-codigo').value;
+        if (!nome || !codigo) return alert("Preencha o nome e o código do app!");
+        let apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
+        const bytes = new Blob([codigo]).size;
+        const tamanho = bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
+        if (idEdicao !== "") {
+            const appIndex = apps.findIndex(a => a.id == idEdicao);
+            if (appIndex !== -1) {
+                if(apps[appIndex].gmail === emailLogado || obterListaAdmins().includes(emailLogado)) {
+                    apps[appIndex].nome = nome;
+                    apps[appIndex].imagem = imagem;
+                    apps[appIndex].codigo = codigo;
+                    apps[appIndex].tamanho = tamanho;
+                } else {
+                    return alert("Sem permissão para editar!");
+                }
+            }
+        } else {
+            apps.unshift({ 
+                id: Date.now(), 
+                nome, 
+                gmail: emailLogado, 
+                imagem, 
+                codigo, 
+                autor: localStorage.getItem('lenux_user') || 'Desenvolvedor', 
+                tamanho, 
+                avaliacoes: [] 
+            });
+        }
+        localStorage.setItem('lenux_apps', JSON.stringify(apps));
+        document.getElementById('app-id-edicao').value = '';
+        document.getElementById('app-nome').value = '';
+        document.getElementById('app-codigo').value = '';
+        carregarApps();
+        mudarAba('explorar');
+    }
+    function deletarApp(idApp) {
+        const emailLogado = localStorage.getItem('lenux_user_email');
+        let apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
+        const app = apps.find(a => a.id == idApp);
+        if(!app) return;
+        if(app.gmail !== emailLogado && !obterListaAdmins().includes(emailLogado)) {
+            return alert("Permissão negada.");
+        }
+        if(!confirm("Excluir este aplicativo?")) return;
+        apps = apps.filter(a => a.id != idApp);
+        localStorage.setItem('lenux_apps', JSON.stringify(apps));
+        carregarApps();
+    }
+    function prepararEdicao(id) {
+        const apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
+        const app = apps.find(a => a.id == id);
+        if(!app) return;
+        document.getElementById('app-id-edicao').value = app.id;
+        document.getElementById('app-nome').value = app.nome;
+        document.getElementById('app-imagem').value = app.imagem;
+        document.getElementById('app-codigo').value = app.codigo;
+        mudarAba('criar');
+    }
+    function adicionarAvaliacao(idApp) {
+        const emailLogado = localStorage.getItem('lenux_user_email');
+        if(!emailLogado) return alert("Faça login no Perfil!");
+        const nota = document.getElementById(`nota-${idApp}`).value;
+        const comentario = document.getElementById(`comentario-${idApp}`).value.trim();
+        if(!comentario) return alert("Comente algo!");
+        let apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
+        const appDestino = apps.find(a => a.id == idApp);
+        let jaAvaliouEsteDev = false;
+        apps.forEach(app => {
+            if(app.gmail === appDestino.gmail && app.avaliacoes) {
+                if(app.avaliacoes.some(av => av.email === emailLogado)) jaAvaliouEsteDev = true;
+            }
+        });
+        if(jaAvaliouEsteDev) return alert("Você já avaliou um aplicativo deste desenvolvedor.");
+        const appIndex = apps.findIndex(a => a.id == idApp);
+        if(!apps[appIndex].avaliacoes) apps[appIndex].avaliacoes = [];
+        apps[appIndex].avaliacoes.push({ 
+            usuario: localStorage.getItem('lenux_user') || 'Usuário', 
+            email: emailLogado, 
+            nota: parseInt(nota), 
+            comentario 
+        });
+        localStorage.setItem('lenux_apps', JSON.stringify(apps));
+        carregarApps();
+    }
+    function carregarApps() {
+        const apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
+        const container = document.getElementById('lista-apps');
+        const emailLogado = localStorage.getItem('lenux_user_email');
+        const admins = obterListaAdmins();
+        const termoBusca = document.getElementById('campo-busca') ? document.getElementById('campo-busca').value.toLowerCase().trim() : '';
+        if(!container) return;
+        const appsFiltrados = apps.filter(app => app.nome.toLowerCase().includes(termoBusca));
+        if (appsFiltrados.length === 0) {
+            container.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#94a3b8;">Nenhum app encontrado.</p>';
+            return;
+        }
+        let htmlFinal = '';
+        appsFiltrados.forEach(app => {
+            const eDono = app.gmail === emailLogado;
+            const eAdmin = admins.includes(emailLogado) || emailLogado === DONO_SUPREMO;
+            const avaliacoes = app.avaliacoes || [];
+            const media = avaliacoes.length > 0 ? (avaliacoes.reduce((acc, av) => acc + av.nota, 0) / avaliacoes.length).toFixed(1) + " ★" : "0 ★";
+            let htmlAvaliacoes = '';
+            avaliacoes.forEach(av => {
+                htmlAvaliacoes += `<div class="bloco-aval"><b>${av.usuario}:</b> "${av.comentario}"</div>`;
+            });
+            htmlFinal += `
+                <div class="card-app">
+                    <div>
+                        <div class="app-icone">${app.imagem}</div>
+                        <div class="app-titulo">${app.nome}</div>
+                        <div class="app-info">${media} | ${app.tamanho}</div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:5px; margin-top:10px;">
+                        <button class="btn-principal" style="padding:8px;" onclick="abrirAppIsolado(${app.id})">Instalar</button>
+                        ${eDono || eAdmin ? `<button class="btn-sucesso" onclick="prepararEdicao(${app.id})">Config</button>` : ''}
+                        ${eDono || eAdmin ? `<button class="btn-perigo" onclick="deletarApp(${app.id})">Excluir</button>` : ''}
+                    </div>
+                    <div class="app-detalhes">
+                        <span style="font-size:0.7rem; color:#64748b;">Dev: ${app.gmail === DONO_SUPREMO ? 'Admin' : (app.autor || 'Desenvolvedor')}</span>
+                        ${htmlAvaliacoes}
+                        <div style="margin-top:8px; display:flex; gap:3px;">
+                            <select id="nota-${app.id}" style="padding:4px; margin:0; font-size:0.75rem; width:60px;">
+                                <option value="5">5★</option><option value="4">4★</option><option value="3">3★</option>
+                            </select>
+                            <input type="text" id="comentario-${app.id}" placeholder="Nota..." style="padding:4px; margin:0; font-size:0.75rem;">
+                            <button class="btn-sucesso" style="padding:4px 8px;" onclick="adicionarAvaliacao(${app.id})">✔</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = htmlFinal;
+    }
+    function abrirAppIsolado(id) {
+        const apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
+        const app = apps.find(a => a.id == id);
+        if(!app) return;
+        document.getElementById('sandbox-titulo').innerText = app.nome;
+        const iframe = document.getElementById('sandbox-visor');
+        document.getElementById('container-sandbox').style.display = 'flex';
+        iframe.srcdoc = app.codigo;
+    }
+    function fecharAppIsolado() {
+        document.getElementById('container-sandbox').style.display = 'none';
+        document.getElementById('sandbox-visor').srcdoc = '';
+    }
+    
+    window.onload = function() {
+        atualizarInterfacePerfil();
+        carregarApps();
+        atualizarPainelAnunciosVisual();
+    };
+</script>
+</body>
+</html>
+
