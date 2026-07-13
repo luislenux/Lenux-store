@@ -244,11 +244,9 @@
 <script>
     const DONO_SUPREMO = "luis@lenux.com";
 
-    // 🚀 INJEÇÃO AUTOMÁTICA DO JOGO DO KAIO
+    // INJEÇÃO AUTOMÁTICA DO JOGO DO KAIO
     function injetarJogoDoKaioFixo() {
         let apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
-        
-        // Verifica se o jogo do Kaio já existe pelo ID reservado (999999)
         const jogoExiste = apps.some(app => app.id === 999999);
         
         if (!jogoExiste) {
@@ -257,7 +255,7 @@
                 nome: "A Caçada de Kaio",
                 gmail: DONO_SUPREMO,
                 imagem: "🎮",
-                codigo: "kaio.html", // Aponta para a sua página secundária
+                codigo: "kaio.html",
                 autor: "Admin",
                 tamanho: "12.5 KB",
                 status: "aprovado",
@@ -426,7 +424,6 @@
         const codigoMinusculo = codigo.toLowerCase();
         let termosPerigosos = [];
 
-        // 🛡️ FILTRO ATUALIZADO: Ignora checagem se for o jogo do Kaio usando WebSocket interno
         if (!codigoMinusculo.includes("kaio.html")) {
             if (codigoMinusculo.includes("fetch(") || codigoMinusculo.includes("xmlhttprequest")) {
                 termosPerigosos.push("Envio de dados externos (fetch/axios)");
@@ -630,9 +627,9 @@
             return alert("❌ Acesso Negado: Você precisa ter pelo menos 13 anos configurados no perfil para abrir este aplicativo!");
         }
 
-        // Se for o aplicativo fixo do Kaio, redireciona para a página kaio.html externa
-        if(id === 999999) {
-            window.location.href = alvoCodigo;
+        // REDIRECIONAMENTO DIRETO SEM USAR IFRAME BLOQUEADO
+        if(id === 999999 || alvoCodigo.includes("kaio.html")) {
+            window.location.href = "kaio.html";
             return;
         }
 
@@ -656,7 +653,7 @@
     }
 
     window.onload = function() {
-        injetarJogoDoKaioFixo(); // Roda a injeção ao carregar
+        injetarJogoDoKaioFixo();
         atualizarInterfacePerfil();
         carregarApps();
     };
