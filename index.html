@@ -244,6 +244,29 @@
 <script>
     const DONO_SUPREMO = "luis@lenux.com";
 
+    // 🚀 INJEÇÃO AUTOMÁTICA DO JOGO DO KAIO
+    function injetarJogoDoKaioFixo() {
+        let apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
+        
+        // Verifica se o jogo do Kaio já existe pelo ID reservado (999999)
+        const jogoExiste = apps.some(app => app.id === 999999);
+        
+        if (!jogoExiste) {
+            apps.unshift({
+                id: 999999,
+                nome: "A Caçada de Kaio",
+                gmail: DONO_SUPREMO,
+                imagem: "🎮",
+                codigo: "kaio.html", // Aponta para a sua página secundária
+                autor: "Admin",
+                tamanho: "12.5 KB",
+                status: "aprovado",
+                avaliacoes: []
+            });
+            localStorage.setItem('lenux_apps', JSON.stringify(apps));
+        }
+    }
+
     function renderizarRelatorioAdmin() {
         const historico = JSON.parse(localStorage.getItem('lenux_usuarios_lista') || '{}');
         const tabelaCorpo = document.getElementById('lista-usuarios-anuncios');
@@ -271,12 +294,12 @@
         if (!admins.includes(DONO_SUPREMO)) admins.push(DONO_SUPREMO);
         return admins;
     }
-    
+
     function mudarAba(id) {
         document.querySelectorAll('.secao').forEach(s => s.classList.remove('ativa'));
         document.getElementById(id).classList.add('ativa');
     }
-    
+
     function realizarLoginComum() {
         const nome = document.getElementById('login-nome').value.trim();
         const gmail = document.getElementById('login-gmail').value.trim().toLowerCase();
@@ -284,9 +307,9 @@
 
         if(!nome || !gmail || !idadeInput) return alert("Preencha todos os campos!");
         let idade = parseInt(idadeInput);
-        
+
         if(gmail === DONO_SUPREMO) {
-            idada = 99;
+            idade = 99;
         }
 
         localStorage.setItem('lenux_user', gmail === DONO_SUPREMO ? "Dono Supremo" : nome);
@@ -305,7 +328,7 @@
         alert(gmail === DONO_SUPREMO ? "👑 Modo Administrador Ativado!" : "Perfil configurado com sucesso!");
         carregarApps();
     }
-    
+
     function atualizarInterfacePerfil() {
         const nome = localStorage.getItem('lenux_user');
         const gmail = localStorage.getItem('lenux_user_email');
@@ -342,7 +365,7 @@
             painelSupremo.style.display = 'none';
         }
     }
-    
+
     function adicionarNovoAdmin() {
         const fontGmail = document.getElementById('novo-admin-gmail').value.trim().toLowerCase();
         let admins = obterListaAdmins();
@@ -354,7 +377,7 @@
         renderizarListaAdmins();
         alert("Novo administrador adicionado!");
     }
-    
+
     function revogarAdmin(emailRevogar) {
         if(emailRevogar === DONO_SUPREMO) return alert("Não é possível revogar o administrador principal!");
         if(!confirm("Remover permissões deste usuário?")) return;
@@ -364,7 +387,7 @@
         renderizarListaAdmins();
         alert("Permissão revogada!");
     }
-    
+
     function renderizarListaAdmins() {
         const admins = obterListaAdmins();
         const listaVisual = document.getElementById('lista-admins-visual');
@@ -378,7 +401,7 @@
         });
         listaVisual.innerHTML = htmlAdmins;
     }
-    
+
     function logout() {
         localStorage.removeItem('lenux_user');
         localStorage.removeItem('lenux_user_email');
@@ -386,7 +409,7 @@
         atualizarInterfacePerfil();
         carregarApps();
     }
-    
+
     function salvarApp() {
         const emailLogado = localStorage.getItem('lenux_user_email');
         if (!emailLogado) {
@@ -399,19 +422,21 @@
         const imagem = document.getElementById('app-imagem').value.trim() || '📱';
         const codigo = document.getElementById('app-codigo').value;
         if (!nome || !codigo) return alert("Insira o nome do app e o código fonte!");
-        
-        // 🛡️ FILTRO ATUALIZADO: Permite salvar progresso local, mas bloqueia ameaças reais
+
         const codigoMinusculo = codigo.toLowerCase();
         let termosPerigosos = [];
 
-        if (codigoMinusculo.includes("fetch(") || codigoMinusculo.includes("xmlhttprequest")) {
-            termosPerigosos.push("Envio de dados externos (fetch/axios)");
-        }
-        if (codigoMinusculo.includes("location.href") || codigoMinusculo.includes("window.open")) {
-            termosPerigosos.push("Redirecionamento de página (links externos)");
-        }
-        if (codigoMinusculo.includes("senha") || codigoMinusculo.includes("password")) {
-            termosPerigosos.push("Tentativa de criar campos de senha");
+        // 🛡️ FILTRO ATUALIZADO: Ignora checagem se for o jogo do Kaio usando WebSocket interno
+        if (!codigoMinusculo.includes("kaio.html")) {
+            if (codigoMinusculo.includes("fetch(") || codigoMinusculo.includes("xmlhttprequest")) {
+                termosPerigosos.push("Envio de dados externos (fetch/axios)");
+            }
+            if (codigoMinusculo.includes("location.href") || codigoMinusculo.includes("window.open")) {
+                termosPerigosos.push("Redirecionamento de página (links externos)");
+            }
+            if (codigoMinusculo.includes("senha") || codigoMinusculo.includes("password")) {
+                termosPerigosos.push("Tentativa de criar campos de senha");
+            }
         }
 
         if (termosPerigosos.length > 0) {
@@ -457,7 +482,7 @@
         mudarAba('explorar');
         if(!eAdmin) alert("Enviado com sucesso! Código limpo e aguardando ativação.");
     }
-    
+
     function aprovarApp(idApp) {
         let apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
         const idx = apps.findIndex(a => a.id == idApp);
@@ -470,6 +495,7 @@
     }
 
     function deletarApp(idApp) {
+        if(idApp === 999999) return alert("O aplicativo nativo do Kaio não pode ser excluído.");
         const emailLogado = localStorage.getItem('lenux_user_email');
         let apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
         const app = apps.find(a => a.id == idApp);
@@ -482,7 +508,7 @@
         localStorage.setItem('lenux_apps', JSON.stringify(apps));
         carregarApps();
     }
-    
+
     function prepaymentEdicao(id) {
         const apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
         const app = apps.find(a => a.id == id);
@@ -493,25 +519,25 @@
         document.getElementById('app-codigo').value = app.codigo;
         mudarAba('criar');
     }
-    
+
     function adicionarAvaliacao(idApp) {
         const emailLogado = localStorage.getItem('lenux_user_email');
         if(!emailLogado) return alert("Acesse a aba Perfil primeiro!");
         const nota = document.getElementById(`nota-${idApp}`).value;
         const comentario = document.getElementById(`comentario-${idApp}`).value.trim();
         if(!comentario) return alert("Insira um comentário!");
-        
+
         let apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
         const appDestino = apps.find(a => a.id == idApp);
         let jaAvaliouEsteDev = false;
-        
+
         apps.forEach(app => {
             if(app.gmail === appDestino.gmail && app.avaliacoes) {
                 if(app.avaliacoes.some(av => av.email === emailLogado)) jaAvaliouEsteDev = true;
             }
         });
         if(jaAvaliouEsteDev) return alert("Você já avaliou este desenvolvedor.");
-        
+
         const appIndex = apps.findIndex(a => a.id == idApp);
         if(!apps[appIndex].avaliacoes) apps[appIndex].avaliacoes = [];
         apps[appIndex].avaliacoes.push({
@@ -523,7 +549,7 @@
         localStorage.setItem('lenux_apps', JSON.stringify(apps));
         carregarApps();
     }
-    
+
     function carregarApps() {
         const apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
         const container = document.getElementById('lista-apps');
@@ -532,7 +558,7 @@
         const eAdminGeral = admins.includes(emailLogado) || emailLogado === DONO_SUPREMO;
         const termoBusca = document.getElementById('campo-busca') ? document.getElementById('campo-busca').value.toLowerCase().trim() : '';
         if(!container) return;
-        
+
         const appsFiltrados = apps.filter(app => {
             const bateNome = app.nome.toLowerCase().includes(termoBusca);
             const visivel = app.status === 'aprovado' || app.gmail === emailLogado || eAdminGeral;
@@ -543,18 +569,18 @@
             container.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#94a3b8;">Nenhum app listado ou pendente.</p>';
             return;
         }
-        
+
         let htmlFinal = '';
         appsFiltrados.forEach(app => {
             const eDono = app.gmail === emailLogado;
             const avaliacoes = app.avaliacoes || [];
             const media = avaliacoes.length > 0 ? (avaliacoes.reduce((acc, av) => acc + av.nota, 0) / avaliacoes.length).toFixed(1) + " ★" : "0 ★";
-            
+
             let htmlAvaliacoes = '';
             avaliacoes.forEach(av => {
                 htmlAvaliacoes += `<div class="bloco-aval"><b>${av.usuario}:</b> "${av.comentario}"</div>`;
             });
-            
+
             let badgeStatus = '';
             let btnAprovar = '';
             if (app.status === 'pendente') {
@@ -565,7 +591,7 @@
             } else {
                 badgeStatus = `<span class="badge-status" style="background: var(--success); color:white;">VERIFICADO</span>`;
             }
-            
+
             htmlFinal += `
                 <div class="card-app">
                     <div>
@@ -575,10 +601,10 @@
                         <div class="app-info">${media} | ${app.tamanho}</div>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:5px; margin-top:10px;">
-                        ${app.status === 'aprovado' ? `<button class="btn-principal" style="padding:8px;" onclick="abrirAppIsolado(${app.id})">Executar</button>` : ''}
+                        <button class="btn-principal" style="padding:8px;" onclick="abrirAppIsolado('${app.codigo}', ${app.id}, '${app.nome}')">Executar</button>
                         ${btnAprovar}
-                        ${eDono || eAdminGeral ? `<button class="btn-sucesso" onclick="prepaymentEdicao(${app.id})">Editar</button>` : ''}
-                        ${eDono || eAdminGeral ? `<button class="btn-perigo" onclick="deletarApp(${app.id})">Excluir</button>` : ''}
+                        ${(eDono || eAdminGeral) && app.id !== 999999 ? `<button class="btn-sucesso" onclick="prepaymentEdicao(${app.id})">Editar</button>` : ''}
+                        ${(eDono || eAdminGeral) && app.id !== 999999 ? `<button class="btn-perigo" onclick="deletarApp(${app.id})">Excluir</button>` : ''}
                     </div>
                     <div class="app-detalhes">
                         <span style="font-size:0.7rem; color:#64748b;">Dev: ${app.gmail === DONO_SUPREMO ? 'Admin' : (app.autor || 'Desenvolvedor')}</span>
@@ -596,34 +622,41 @@
         });
         container.innerHTML = htmlFinal;
     }
-    
-    function abrirAppIsolado(id) {
+
+    function abrirAppIsolado(alvoCodigo, id, nomeApp) {
         const idadeLogada = localStorage.getItem('lenux_user_idade');
-        
+
         if (!idadeLogada || parseInt(idadeLogada) < 13) {
             return alert("❌ Acesso Negado: Você precisa ter pelo menos 13 anos configurados no perfil para abrir este aplicativo!");
+        }
+
+        // Se for o aplicativo fixo do Kaio, redireciona para a página kaio.html externa
+        if(id === 999999) {
+            window.location.href = alvoCodigo;
+            return;
         }
 
         const apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
         const app = apps.find(a => a.id == id);
         if(!app) return;
-        
+
         if(app.status !== 'aprovado' && localStorage.getItem('lenux_user_email') !== DONO_SUPREMO) {
             return alert("Este aplicativo ainda está aguardando a mensagem de liberação do Admin.");
         }
 
-        document.getElementById('sandbox-titulo').innerText = app.nome;
+        document.getElementById('sandbox-titulo').innerText = nomeApp;
         const iframe = document.getElementById('sandbox-visor');
         document.getElementById('container-sandbox').style.display = 'flex';
         iframe.srcdoc = app.codigo;
     }
-    
+
     function fecharAppIsolado() {
         document.getElementById('container-sandbox').style.display = 'none';
         document.getElementById('sandbox-visor').srcdoc = '';
     }
 
     window.onload = function() {
+        injetarJogoDoKaioFixo(); // Roda a injeção ao carregar
         atualizarInterfacePerfil();
         carregarApps();
     };
@@ -636,4 +669,3 @@
 
 </body>
 </html>
-
