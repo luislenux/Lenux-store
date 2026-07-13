@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>A Caçada de Kaio: O Resgate Multiplayer</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #020204; font-family: sans-serif; color: white; user-select: none; touch-action: none; }
+        #canvas3d { width: 100%; height: 100%; display: block; }
+        
+        .tela-interface { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #0a0a1a 0%, #020204 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 30; padding: 20px; box-sizing: border-box; text-align: center; }
+        .btn-menu { background: linear-gradient(135deg, #ff3b30 0%, #a30000 100%); color: white; font-weight: 800; font-size: 1.2rem; padding: 16px 32px; border-radius: 12px; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 42, 42, 0.4); text-transform: uppercase; }
+        
+        #hud-principal { position: absolute; top: 15px; left: 15px; z-index: 10; background: rgba(5, 5, 12, 0.95); padding: 12px; border-radius: 10px; font-size: 0.85rem; width: 290px; border-left: 5px solid #ff2a2a; pointer-events: none; display: none; }
+        .hud-item { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .missao-txt { color: #aaa; font-size: 0.8rem; margin-top: 3px; }
+        .concluida { color: #00ffaa !important; text-decoration: line-through; }
+
+        #mobile-box { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; display: none; }
+        .touch-pad { position: absolute; top: 0; height: 100%; pointer-events: auto; width: 50%; }
+        #pad-andar { left: 0; } #pad-olhar { right: 0; }
+        #joy-base { position: absolute; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; display: none; transform: translate(-50%, -50%); }
+        #joy-stick { position: absolute; width: 32px; height: 32px; background: rgba(255,255,255,0.4); border-radius: 50%; top: 22px; left: 22px; }
+        #btn-acao { position: absolute; bottom: 30px; right: 30px; width: 95px; height: 95px; background: linear-gradient(135deg, #ffaa00 0%, #cc7a00 100%); border-radius: 50%; display: none; justify-content: center; align-items: center; font-weight: bold; font-size: 0.75rem; pointer-events: auto; text-align: center; border: 2px solid white; color: white; }
+
+        #minijogo-setas { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.95); padding: 20px; border-radius: 15px; border: 3px solid #ffaa00; display: none; text-align: center; z-index: 40; width: 270px; }
+        .seta-alvo { font-size: 2.2rem; margin: 4px; display: inline-block; color: #444; }
+        .seta-ativa { color: #fff; text-shadow: 0 0 10px #ffaa00; }
+        .seta-acertada { color: #00ffaa; text-shadow: 0 0 10px #00ffaa; }
+        .grid-setas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .btn-seta { background: #222; border: 2px solid #555; color: white; font-size: 1.6rem; padding: 10px; border-radius: 8px; }
+
+        #tela-final { display: none; background: #000; z-index: 50; }
+    </style>
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+</head>
+<body>
+
+    <div id="menu-principal" class="tela-interface">
+        <h1 style="letter-spacing: 3px; margin-bottom: 5px;">A CAÇADA DE KAIO</h1>
+        <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 30px;">MULTIPLAYER REAL-TIME</p>
+        <button class="btn-menu" onclick="conectarAoServidor()">Entrar e Jogar 🌐</button>
+    </div>
+
+    <div id="hud-principal">
+        <div class="hud-item"><span>Seu Familiar:</span><span id="hud-papel" style="color:#ffaa00; font-weight:bold;">-</span></div>
+        <div class="hud-item"><span>Rede:</span><span id="net-status" style="color:#00ffaa;">Conectando...</span></div>
+        <hr style="border: 0; border-top: 1px solid #333; margin: 8px 0;">
+        <div style="font-weight: bold; color: #ffaa00; margin-bottom: 4px;">RESGATES COMPARTILHADOS:</div>
+        <div id="m-mae" class="missao-txt">🔴 Mãe: Ir na varanda acertar as setas</div>
+        <div id="m-arthur" class="missao-txt">🔴 Arthur: Chave do porão -> Chave de fenda + Água com sal</div>
+        <div id="m-taylon" class="missao-txt">🔴 Taylon: Achar corda -> Salvar do telhado</div>
+        <div id="m-luis" class="missao-txt" style="color:#ff4444; font-weight:bold;">🔒 Status: Luís está preso!</div>
+    </div>
+
+    <div id="mobile-box">
+        <div id="pad-andar" class="touch-pad"></div>
+        <div id="pad-olhar" class="touch-pad"></div>
+        <div id="joy-base"><div id="joy-stick"></div></div>
+        <div id="btn-acao" onclick="executarAcaoGatilho()">INTERAGIR</div>
+    </div>
+
+    <div id="minijogo-setas">
+        <h4 style="margin: 0 0 10px 0; color: #ffaa00;">ACERTE AS SETAS! 🎯</h4>
+        <div>
+            <span id="s0" class="seta-alvo">⬆️</span>
+            <span id="s1" class="seta-alvo">➡️</span>
+            <span id="s2" class="seta-alvo">⬇️</span>
+            <span id="s3" class="seta-alvo">⬅️</span>
+        </div>
+        <div class="grid-setas">
+            <div></div><button class="btn-seta" onclick="clickSeta('⬆️')">⬆️</button><div></div>
+            <button class="btn-seta" onclick="clickSeta('⬅️')">⬅️</button>
+            <button class="btn-seta" onclick="clickSeta('⬇️')">⬇️</button>
+            <button class="btn-seta" onclick="clickSeta('➡️')">➡️</button>
+        </div>
+    </div>
+
+    <div id="tela-final" class="tela-interface">
+        <h2 style="color: #00ffaa; margin-bottom: 15px;">VITÓRIA DA FAMÍLIA! 🎉</h2>
+        <p id="narracao-jocione" style="font-size: 1.1rem; max-width: 420px; color: #e2e8f0; line-height: 1.6;"></p>
+        <button class="btn-menu" style="background: #1e293b; margin-top: 30px;" onclick="location.reload()">Jogar de Novo 🔄</button>
+    </div>
+
+    <script>
+        let socket;
+        let idJogador = "user_" + Math.random().toString(36).substring(5);
+        let papelFamiliar = ""; 
+        let moveJoystick = new THREE.Vector2(0,0);
+        let anguloYaw = 0, anguloPitch = 0, targetYaw = 0, targetPitch = 0;
+        
+        let cena, camera, renderer, lanterna;
+        let outrosJogadores = {};
+
+        // Sincronização das missões via rede
+        let estadoJogo = { maeSeta: false, arthurChavePorao: false, arthurItens: false, taylonCorda: false, taylonSalvo: false };
+
+        // Itens físicos do cenário
+        let varandaPos = new THREE.Vector3(0, 1.6, 8.5);
+        let itemChavePorao, itemChaveFenda, itemAguaSal, itemCorda;
+
+        let sequencia = ['⬆️', '➡️', '⬇️', '⬅️'];
+        let progressoSeta = 0;
+
+        function conectarAoServidor() {
+            socket = new WebSocket('wss://p2p-multiplayer-test.glitch.me');
+
+            socket.onopen = () => {
+                document.getElementById('net-status').innerText = "Online";
+                
+                // Escolha ALEATÓRIA de familiares (Mãe, Pai ou Avó)
+                const familiares = ["Mãe", "Pai", "Avó"];
+                papelFamiliar = familiares[Math.floor(Math.random() * familiares.length)];
+                document.getElementById('hud-papel').innerText = papelFamiliar;
+
+                socket.send(JSON.stringify({ tipo: 'entrar', id: idJogador, papel: papelFamiliar }));
+                
+                document.getElementById('menu-principal').style.display = 'none';
+                document.getElementById('hud-principal').style.display = 'block';
+                document.getElementById('mobile-box').style.display = 'block';
+
+                inicializarCenario3D();
+            };
+
+            socket.onmessage = (event) => {
+                const dados = JSON.parse(event.data);
+
+                if (dados.tipo === 'lista_jogadores') {
+                    renderizarAmigosRede(dados.jogadores);
+                }
+                if (dados.tipo === 'atualizar_posicao') {
+                    if (outrosJogadores[dados.id]) {
+                        outrosJogadores[dados.id].position.set(dados.x, 0.8, dados.z);
+                        outrosJogadores[dados.id].rotation.y = dados.yaw;
+                    }
+                }
+                // Sincroniza as conquistas do grupo em tempo real
+                if (dados.tipo === 'atualizar_missao') {
+                    receberAtualizacaoMissao(dados.missao, dados.valor);
+                }
+                if (dados.tipo === 'remover_jogador') {
+                    if (outrosJogadores[dados.id]) {
+                        cena.remove(outrosJogadores[dados.id]);
+                        delete outrosJogadores[dados.id];
+                    }
+                }
+            };
+        }
+
+        function enviarEventoMissao(nomeMissao, valor) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ tipo: 'atualizar_missao', missao: nomeMissao, valor: valor }));
+            }
+            receberAtualizacaoMissao(nomeMissao, valor); // Atualiza local também
+        }
+
+        function receberAtualizacaoMissao(missao, valor) {
+            estadoJogo[missao] = valor;
+
+            if (missao === 'maeSeta') {
+                document.getElementById('m-mae').className = "missao-txt concluida";
+                document.getElementById('m-mae').innerText = "🟢 Mãe: Varanda concluída! 🎯";
+            }
+            if (missao === 'arthurChavePorao' && itemChavePorao) cena.remove(itemChavePorao);
+            if (missao === 'arthurItens') {
+                if(itemChaveFenda) cena.remove(itemChaveFenda);
+                if(itemAguaSal) cena.remove(itemAguaSal);
+                document.getElementById('m-arthur').className = "missao-txt concluida";
+                document.getElementById('m-arthur').innerText = "🟢 Arthur: Entrou no porão e gerou a explosão! 💥";
+            }
+            if (missao === 'taylonCorda' && itemCorda) cena.remove(itemCorda);
+            if (missao === 'taylonSalvo') {
+                document.getElementById('m-taylon').className = "missao-txt concluida";
+                document.getElementById('m-taylon').innerText = "🟢 Taylon: Resgatado do telhado com a corda! 🪢";
+            }
+
+            // Verifica se TODAS as condições foram batidas para ativar o final do Jocione
+            if (estadoJogo.maeSeta && estadoJogo.arthurItens && estadoJogo.taylonSalvo) {
+                dispararFinalJocione();
+            }
+        }
+
+        function inicializarCenario3D() {
+            cena = new THREE.Scene();
+            cena.fog = new THREE.FogExp2(0x020205, 0.04);
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.6, 12);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas3d').appendChild(renderer.domElement);
+
+            cena.add(new THREE.AmbientLight(0x0a0a15, 0.5));
+            lanterna = new THREE.SpotLight(0xfffae0, 4, 35);
+            cena.add(lanterna, lanterna.target);
+
+            // Montagem da Estrutura Física
+            const chao = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({ color: 0x111116 }));
+            chao.rotation.x = -Math.PI / 2; cena.add(chao);
+
+            const casa = new THREE.Mesh(new THREE.BoxGeometry(14, 6, 14), new THREE.MeshStandardMaterial({ color: 0x222530 }));
+            casa.position.set(0, 3, 0); cena.add(casa);
+
+            const varanda = new THREE.Mesh(new THREE.BoxGeometry(6, 0.5, 3), new THREE.MeshStandardMaterial({ color: 0x442222 }));
+            varanda.position.set(0, 1.5, 8.5); cena.add(varanda);
+
+            const alvo = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.1, 16), new THREE.MeshBasicMaterial({color: 0xff0000}));
+            alvo.rotation.x = Math.PI/2; alvo.position.set(0, 3.5, 6.9); cena.add(alvo);
+
+            // Geração dos Itens Físicos de Resgate
+            itemChavePorao = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.1,0.4), new THREE.MeshBasicMaterial({color: 0xffaa00}));
+            itemChavePorao.position.set(-6, 0.2, 5); cena.add(itemChavePorao);
+
+            itemChaveFenda = new THREE.Mesh(new THREE.BoxGeometry(0.1,0.1,0.5), new THREE.MeshBasicMaterial({color: 0xcccccc}));
+            itemChaveFenda.position.set(-8, 0.2, -3); cena.add(itemChaveFenda);
+
+            itemAguaSal = new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,0.4), new THREE.MeshBasicMaterial({color: 0x00aaff}));
+            itemAguaSal.position.set(-9, 0.2, -1); cena.add(itemAguaSal);
+
+            itemCorda = new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,0.5), new THREE.MeshBasicMaterial({color: 0x8b5a2b}));
+            itemCorda.position.set(8, 0.2, -4); cena.add(itemCorda);
+
+            // Inimigo: O Kaio (Cubo Vermelho Perseguidor)
+            let kaio = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.6, 1.6), new THREE.MeshStandardMaterial({color: 0xcc0000}));
+            kaio.position.set(0, 1.3, -3); cena.add(kaio);
+
+            configurarToques();
+            loop();
+        }
+
+        function renderizarAmigosRede(jogadores) {
+            Object.keys(jogadores).forEach(id => {
+                if (id === idJogador) return;
+                if (!outrosJogadores[id]) {
+                    let boneco = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.6, 0.7), new THREE.MeshStandardMaterial({ color: 0x00ffaa }));
+                    boneco.position.set(jogadores[id].x || 0, 0.8, jogadores[id].z || 0);
+                    cena.add(boneco);
+                    outrosJogadores[id] = boneco;
+                }
+            });
+        }
+
+        // MONITORAMENTO DE GATILHOS DE ACORDO COM A SUA PROXIMIDADE
+        function verificarProximidadeGatilhos() {
+            let pPos = camera.position;
+            let btn = document.getElementById('btn-acao');
+
+            // 1. Gatilho da Mãe na Varanda
+            if (!estadoJogo.maeSeta && pPos.distanceTo(varandaPos) < 3) {
+                btn.style.display = 'flex'; btn.innerText = "TACAR CHINELO 🎯";
+            } 
+            // 2. Etapas do Resgate do Arthur (Porão)
+            else if (!estadoJogo.arthurChavePorao && pPos.distanceTo(itemChavePorao.position) < 1.5) {
+                btn.style.display = 'flex'; btn.innerText = "PEGAR CHAVE DO PORÃO 🔑";
+            } else if (estadoJogo.arthurChavePorao && !estadoJogo.arthurItens && pPos.distanceTo(new THREE.Vector3(-8,0,-2)) < 3) {
+                btn.style.display = 'flex'; btn.innerText = "PROCURAR ITENS NO PORÃO 🧪";
+            }
+            // 3. Etapas do Resgate do Taylon (Telhado)
+            else if (!estadoJogo.taylonCorda && pPos.distanceTo(itemCorda.position) < 1.5) {
+                btn.style.display = 'flex'; btn.innerText = "PEGAR CORDA DO RESGATE 🪢";
+            } else if (estadoJogo.taylonCorda && !estadoJogo.taylonSalvo && pPos.distanceTo(new THREE.Vector3(7, 0, 0)) < 3) {
+                btn.style.display = 'flex'; btn.innerText = "JOGAR CORDA NO TELHADO 🧗";
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        function executarAcaoGatilho() {
+            let btnText = document.getElementById('btn-acao').innerText;
+
+            if (btnText.includes("CHINELO")) {
+                document.getElementById('mobile-box').style.display = 'none';
+                progressoSeta = 0;
+                document.getElementById('minijogo-setas').style.display = 'block';
+                atualizarVisualSetas();
+            }
+            else if (btnText.includes("CHAVE DO PORÃO")) {
+                enviarEventoMissao('arthurChavePorao', true);
+                alert("Você pegou a chave! O Porão lateral da casa foi liberado!");
+            }
+            else if (btnText.includes("PROCURAR ITENS")) {
+                enviarEventoMissao('arthurItens', true);
+                alert("Você entrou no porão, achou a Chave de Fenda e a Água com Sal! Uma explosão quebrou as correntes do Arthur!");
+            }
+            else if (btnText.includes("PEGAR CORDA")) {
+                enviarEventoMissao('taylonCorda', true);
+                alert("Você pegou a corda de escalada!");
+            }
+            else if (btnText.includes("JOGAR CORDA")) {
+                enviarEventoMissao('taylonSalvo', true);
+                alert("Você jogou a corda no telhado e puxou o Taylon em segurança para baixo!");
+            }
+        }
+
+        // MINIJOGO DA MÃE
+        function atualizarVisualSetas() {
+            for(let i=0; i<4; i++) {
+                let el = document.getElementById('s' + i);
+                if(i < progressoSeta) el.className = "seta-alvo seta-acertada";
+                else if(i === progressoSeta) el.className = "seta-alvo seta-ativa";
+                else el.className = "seta-alvo";
+            }
+        }
+
+        function clickSeta(seta) {
+            if(seta === sequencia[progressoSeta]) {
+                progressoSeta++;
+                atualizarVisualSetas();
+                if(progressoSeta === sequencia.length) {
+                    document.getElementById('minijogo-setas').style.display = 'none';
+                    document.getElementById('mobile-box').style.display = 'block';
+                    enviarEventoMissao('maeSeta', true);
+                    alert("Alvo atingido em cheio! Mecanismo desativado!");
+                }
+            } else { progressoSeta = 0; atualizarVisualSetas(); }
+        }
+
+        // FINAL CINEMATOGRÁFICO DO JOCIONE
+        function dispararFinalJocione() {
+            document.getElementById('mobile-box').style.display = 'none';
+            document.getElementById('hud-principal').style.display = 'none';
+            
+            document.getElementById('m-luis').innerText = "🔓 Status: Todos foram resgatados!";
+            
+            let campoTexto = document.getElementById('narracao-jocione');
+            document.getElementById('tela-final').style.display = 'flex';
+            
+            let scriptFinal = "A Mãe detonou com o chinelo! O Arthur concluiu a reação química estourando o porão, e o Taylon desceu do telhado em segurança! O Kaio se viu cercado e preparou um golpe final contra os familiares... MAS DE REPENTE, O JOCIONE CHEGOU DE SURPRESA, METEU UMA SURRA HISTÓRICA NO KAIO E SALVOU TODA A FAMÍLIA! VITÓRIA!";
+            
+            let index = 0; campoTexto.innerText = "";
+            function digitacao() {
+                if (index < scriptFinal.length) {
+                    campoTexto.innerText += scriptFinal.charAt(index);
+                    index++;
+                    setTimeout(digitacao, 40);
+                }
+            }
+            digitacao();
+        }
+
+        // CONTROLES MOBILE
+        function configurarToques() {
+            const bJoy = document.getElementById('joy-base'); const pJoy = document.getElementById('joy-stick');
+            const pAndar = document.getElementById('pad-andar'); const pOlhar = document.getElementById('pad-olhar');
+            let idAndar = null; let sAndar = new THREE.Vector2(), sOlhar = new THREE.Vector2();
+
+            pAndar.addEventListener('touchstart', e => {
+                let t = e.changedTouches[0]; idAndar = t.identifier; sAndar.set(t.clientX, t.clientY);
+                bJoy.style.display = 'block'; bJoy.style.left = t.clientX + 'px'; bJoy.style.top = t.clientY + 'px';
+            });
+            pAndar.addEventListener('touchmove', e => {
+                for(let t of e.touches) {
+                    if(t.identifier === idAndar) {
+                        let d = new THREE.Vector2(t.clientX, t.clientY).sub(sAndar);
+                        if(d.length() > 30) d.normalize().multiplyScalar(30);
+                        pJoy.style.left = (22 + d.x) + 'px'; pJoy.style.top = (22 + d.y) + 'px';
+                        moveJoystick.set(d.x / 30, -d.y / 30);
+                    }
+                }
+            });
+            pAndar.addEventListener('touchend', () => { bJoy.style.display = 'none'; moveJoystick.set(0,0); });
+
+            pOlhar.addEventListener('touchstart', e => { sOlhar.set(e.changedTouches[0].clientX, e.changedTouches[0].clientY); });
+            pOlhar.addEventListener('touchmove', e => {
+                let t = e.touches[0];
+                let xMov = (t.clientX - sOlhar.x) * 0.007; let yMov = (t.clientY - sOlhar.y) * 0.007;
+                targetYaw -= xMov; targetPitch -= yMov;
+                targetPitch = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, targetPitch));
+                sOlhar.set(t.clientX, t.clientY);
+            });
+        }
+
+        // LOOP DE ATUALIZAÇÃO DA REDE E GRÁFICOS
+        function loop() {
+            requestAnimationFrame(loop);
+
+            anguloYaw += (targetYaw - anguloYaw) * 0.2; anguloPitch += (targetPitch - anguloPitch) * 0.2;
+            camera.quaternion.setFromEuler(new THREE.Euler(anguloPitch, anguloYaw, 0, 'YXZ'));
+
+            const vF = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            const vL = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            vF.y = 0; vL.y = 0; vF.normalize(); vL.normalize();
+
+            let oldX = camera.position.x; let oldZ = camera.position.z;
+            camera.position.addScaledVector(vF, moveJoystick.y * 0.1);
+            camera.position.addScaledVector(vL, moveJoystick.x * 0.1);
+
+            // Bloqueio de parede simples para a casa central
+            if (camera.position.x > -7.2 && camera.position.x < 7.2 && camera.position.z > -7.2 && camera.position.z < 7.2) {
+                camera.position.set(oldX, camera.position.y, oldZ);
+            }
+
+            // Envia movimentos aos amigos via socket
+            if ((oldX !== camera.position.x || oldZ !== camera.position.z) && socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ tipo: 'movimento', id: idJogador, x: camera.position.x, z: camera.position.z, yaw: anguloYaw }));
+            }
+
+            lanterna.position.copy(camera.position);
+            let dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            lanterna.target.position.copy(camera.position).add(dir);
+
+            verificarProximidadeGatilhos();
+            renderer.render(cena, camera);
+        }
+    </script>
+</body>
+</html>
