@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
 
 <meta charset="UTF-8">
@@ -15,28 +16,92 @@ overflow:hidden;
 background:black;
 }
 
+
 canvas{
 display:block;
+}
+
+
+#joystick{
+
+position:absolute;
+
+bottom:40px;
+left:40px;
+
+width:120px;
+height:120px;
+
+border-radius:50%;
+
+background:#ffffff33;
+
+}
+
+
+#bola{
+
+position:absolute;
+
+width:50px;
+height:50px;
+
+border-radius:50%;
+
+background:#3ddc84;
+
+left:35px;
+top:35px;
+
+}
+
+
+
+#botao{
+
+position:absolute;
+
+right:40px;
+bottom:50px;
+
+width:80px;
+height:80px;
+
+border-radius:50%;
+
+background:#3ddc84;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+font-weight:bold;
+
 }
 
 
 #menu{
 
 position:absolute;
-z-index:10;
 
 width:100%;
 height:100%;
 
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-
 background:#000b;
 
-font-family:Arial;
+display:flex;
+
+flex-direction:column;
+
+justify-content:center;
+
+align-items:center;
+
 color:white;
+
+font-family:Arial;
+
+z-index:10;
 
 }
 
@@ -44,35 +109,16 @@ color:white;
 button{
 
 padding:15px;
-margin:10px;
 
 width:250px;
 
-border:0;
-border-radius:15px;
-
 background:#3ddc84;
 
+border:0;
+
+border-radius:15px;
+
 font-size:18px;
-
-}
-
-
-#hud{
-
-position:absolute;
-top:10px;
-left:10px;
-
-color:white;
-
-background:#0008;
-
-padding:10px;
-
-display:none;
-
-font-family:Arial;
 
 }
 
@@ -85,34 +131,35 @@ font-family:Arial;
 <body>
 
 
+
 <div id="menu">
 
 <h1>
-👶 A Caçada de Kaio 3D
+👶 A Caçada de Kaio
 </h1>
 
 
-<button onclick="iniciarJogo()">
+<button onclick="jogar()">
+
 Jogar
+
 </button>
 
 
 </div>
 
 
-<div id="hud">
 
-Personagem:
-<span id="player">
-Pai
-</span>
+<div id="joystick">
 
-<br>
+<div id="bola"></div>
 
-Missão:
-<span id="missao">
-Salvar Arthur
-</span>
+</div>
+
+
+<div id="botao">
+
+AÇÃO
 
 </div>
 
@@ -125,35 +172,35 @@ Salvar Arthur
 
 
 let cena;
+
 let camera;
-let renderizador;
 
-let teclas={};
-
-
-let velocidade=0.15;
+let renderer;
 
 
+let andando=false;
 
-function iniciarJogo(){
+let direcao={
+x:0,
+y:0
+};
 
+
+
+function jogar(){
 
 document.getElementById("menu").style.display="none";
 
-document.getElementById("hud").style.display="block";
-
-
-criarMundo();
-
+iniciar3D();
 
 }
 
 
 
-function criarMundo(){
+function iniciar3D(){
 
 
-cena = new THREE.Scene();
+cena=new THREE.Scene();
 
 
 cena.background =
@@ -161,12 +208,11 @@ new THREE.Color(0x87ceeb);
 
 
 
-camera =
-new THREE.PerspectiveCamera(
+camera=new THREE.PerspectiveCamera(
 
 75,
 
-window.innerWidth/window.innerHeight,
+innerWidth/innerHeight,
 
 0.1,
 
@@ -184,39 +230,26 @@ camera.position.set(
 
 
 
-renderizador =
-new THREE.WebGLRenderer();
+renderer=new THREE.WebGLRenderer();
 
 
-
-renderizador.setSize(
-
-window.innerWidth,
-
-window.innerHeight
-
+renderer.setSize(
+innerWidth,
+innerHeight
 );
-
 
 
 document.body.appendChild(
-renderizador.domElement
+renderer.domElement
 );
-
 
 
 
 let luz =
-new THREE.DirectionalLight(
+new THREE.HemisphereLight(
 0xffffff,
-1
-);
-
-
-luz.position.set(
-5,
-10,
-5
+0x444444,
+2
 );
 
 
@@ -224,21 +257,23 @@ cena.add(luz);
 
 
 
+
 let chao =
 new THREE.Mesh(
 
 new THREE.BoxGeometry(
-30,
+40,
 0.2,
-30
+40
 ),
 
 new THREE.MeshBasicMaterial({
+
 color:0x3f9b3f
+
 })
 
 );
-
 
 
 chao.position.y=-0.1;
@@ -253,49 +288,51 @@ let casa =
 new THREE.Mesh(
 
 new THREE.BoxGeometry(
-6,
-3,
-6
+8,
+4,
+8
 ),
 
 new THREE.MeshBasicMaterial({
+
 color:0xc9a66b
+
 })
 
 );
 
 
 
-casa.position.set(
-0,
-1.5,
--8
-);
+casa.position.z=-10;
 
+casa.position.y=2;
 
 
 cena.add(casa);
 
 
 
-animar();
+loop();
 
 
 }
 
 
 
-
-function animar(){
-
-
-requestAnimationFrame(animar);
+function loop(){
 
 
-movimento();
+requestAnimationFrame(loop);
 
 
-renderizador.render(
+
+camera.position.x += direcao.x *0.08;
+
+camera.position.z += direcao.y *0.08;
+
+
+
+renderer.render(
 cena,
 camera
 );
@@ -305,45 +342,76 @@ camera
 
 
 
-function movimento(){
+
+let joy=document.getElementById("joystick");
+
+let bola=document.getElementById("bola");
 
 
-if(teclas["w"])
-camera.position.z-=velocidade;
+
+joy.addEventListener(
+"touchmove",
+function(e){
 
 
-if(teclas["s"])
-camera.position.z+=velocidade;
+let toque=e.touches[0];
 
 
-if(teclas["a"])
-camera.position.x-=velocidade;
+let rect=joy.getBoundingClientRect();
 
 
-if(teclas["d"])
-camera.position.x+=velocidade;
+let x=toque.clientX-rect.left-60;
 
+let y=toque.clientY-rect.top-60;
+
+
+
+let distancia=Math.sqrt(
+x*x+y*y
+);
+
+
+
+if(distancia>45){
+
+x=x/distancia*45;
+
+y=y/distancia*45;
 
 }
 
 
 
-document.addEventListener(
-"keydown",
-e=>{
+bola.style.left=(x+35)+"px";
 
-teclas[e.key.toLowerCase()]=true;
+bola.style.top=(y+35)+"px";
+
+
+
+direcao.x=x/45;
+
+direcao.y=y/45;
+
+
 
 }
 );
 
 
 
-document.addEventListener(
-"keyup",
-e=>{
+joy.addEventListener(
+"touchend",
+function(){
 
-teclas[e.key.toLowerCase()]=false;
+bola.style.left="35px";
+
+bola.style.top="35px";
+
+
+direcao.x=0;
+
+direcao.y=0;
+
 
 }
 );
