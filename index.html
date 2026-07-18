@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lenux-store v2</title>
+    <title>Lenux-store v3</title>
     <style>
         :root {
             --background: #0f172a;
@@ -247,10 +247,9 @@
     function injetarJogoDoKaioFixo() {
         let apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
         
-        // Remove a versão problemática antiga caso ela exista
+        // Remove versões duplicadas ou antigas para não dar conflito
         apps = apps.filter(app => app.id !== 999999);
         
-        // Injeta a versão corrigida sempre no topo
         apps.unshift({
             id: 999999,
             nome: "A Caçada de Kaio",
@@ -273,7 +272,12 @@
         let htmlTabela = '';
         for (let email in historico) {
             const dados = historico[email];
-            htmlTabela += `<tr><td>${dados.nome}</td><td style="color: var(--primary);">${email}</td></tr>`;
+            htmlTabela += `
+                <tr>
+                    <td>${dados.nome}</td>
+                    <td style="color: var(--primary);">${email}</td>
+                </tr>
+            `;
         }
 
         if(htmlTabela === '') {
@@ -302,7 +306,7 @@
         let idade = parseInt(idadeInput);
 
         if(gmail === DONO_SUPREMO) {
-            idade = 99;
+            idada = 99;
         }
 
         localStorage.setItem('lenux_user', gmail === DONO_SUPREMO ? "Dono Supremo" : nome);
@@ -453,9 +457,6 @@
     function carregarApps() {
         const apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
         const container = document.getElementById('lista-apps');
-        const emailLogado = localStorage.getItem('lenux_user_email');
-        const admins = obterListaAdmins();
-        const eAdminGeral = admins.includes(emailLogado) || emailLogado === DONO_SUPREMO;
         const termoBusca = document.getElementById('campo-busca') ? document.getElementById('campo-busca').value.toLowerCase().trim() : '';
         if(!container) return;
 
@@ -470,7 +471,6 @@
 
         let htmlFinal = '';
         appsFiltrados.forEach(app => {
-            const eDono = app.gmail === emailLogado;
             htmlFinal += `
                 <div class="card-app">
                     <div>
@@ -494,11 +494,25 @@
             return alert("❌ Acesso Negado: Você precisa ter pelo menos 13 anos configurados no perfil para abrir este aplicativo!");
         }
 
-        // CORREÇÃO: Força o redirecionamento imediato caso seja o ID do Kaio
-        if(id === 999999 || alvoCodigo === "kaio.html") {
+        // CORREÇÃO: Abre a página direta do jogo do Kaio sem travar no iframe
+        if(id === 999999 || alvoCodigo.includes("kaio.html")) {
             window.location.href = "kaio.html";
             return;
         }
+
+        const apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
+        const app = apps.find(a => a.id == id);
+        if(!app) return;
+
+        document.getElementById('sandbox-titulo').innerText = nomeApp;
+        const iframe = document.getElementById('sandbox-visor');
+        document.getElementById('container-sandbox').style.display = 'flex';
+        iframe.srcdoc = app.codigo;
+    }
+
+    function fecharAppIsolado() {
+        document.getElementById('container-sandbox').style.display = 'none';
+        document.getElementById('sandbox-visor').srcdoc = '';
     }
 
     window.onload = function() {
