@@ -3,47 +3,32 @@ const http = require("http");
 const { Server } = require("socket.io");
 
 const app = express();
-
 const server = http.createServer(app);
 
-const io = new Server(server, {
-    cors: {
-        origin: "*"
-    }
-});
+const io = new Server(server);
 
-const jogadores = {};
-
-app.use(express.static("./"));
+app.use(express.static("."));
 
 io.on("connection", (socket) => {
 
     console.log("Jogador conectado:", socket.id);
 
-    jogadores[socket.id] = {
-        x: 100,
-        y: 100
-    };
+    socket.on("criarSala", (codigo) => {
+        socket.join(codigo);
+    });
 
-    io.emit("jogadores", jogadores);
-
-    socket.on("movimento", (dados) => {
-
-        jogadores[socket.id] = dados;
-
-        io.emit("jogadores", jogadores);
+    socket.on("entrarSala", (codigo) => {
+        socket.join(codigo);
     });
 
     socket.on("disconnect", () => {
-
-        delete jogadores[socket.id];
-
-        io.emit("jogadores", jogadores);
+        console.log("Jogador saiu");
     });
+
 });
 
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+    console.log("Servidor rodando!");
 });
