@@ -113,32 +113,6 @@
             text-overflow: ellipsis;
         }
         .app-info { font-size: 0.75rem; color: #94a3b8; margin-bottom: 10px; }
-        .app-detalhes { text-align: left; border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px; font-size: 0.8rem; }
-        .bloco-aval { background: #111827; padding: 6px; border-radius: 6px; margin-top: 5px; }
-        #container-sandbox {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.98);
-            z-index: 9999;
-            flex-direction: column;
-        }
-        iframe { flex: 1; border: none; background: white; }
-        .tabela-usuarios {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 0.85rem;
-        }
-        .tabela-usuarios th, .tabela-usuarios td {
-            border: 1px solid var(--border);
-            padding: 8px;
-            text-align: left;
-        }
-        .tabela-usuarios th {
-            background: #111827;
-            color: var(--primary);
-        }
         .badge-status {
             font-size: 0.7rem;
             padding: 2px 6px;
@@ -154,6 +128,30 @@
             color: #ff79c6;
             font-family: monospace;
         }
+        .tabela-usuarios {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.85rem;
+        }
+        .tabela-usuarios th, .tabela-usuarios td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            text-align: left;
+        }
+        .tabela-usuarios th {
+            background: #111827;
+            color: var(--primary);
+        }
+        #container-sandbox {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.98);
+            z-index: 9999;
+            flex-direction: column;
+        }
+        iframe { flex: 1; border: none; background: white; }
     </style>
 </head>
 <body>
@@ -261,26 +259,6 @@
 <script>
     const DONO_SUPREMO = "luis@lenux.com";
 
-    function injetarJogoDoKaioFixo() {
-        let apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
-
-        // Remove versões duplicadas ou antigas para não dar conflito
-        apps = apps.filter(app => app.id !== 999999);
-
-        apps.unshift({
-            id: 999999,
-            nome: "A Caçada de Kaio",
-            gmail: DONO_SUPREMO,
-            imagem: "🎮",
-            codigo: "kaio.html",
-            autor: "Admin",
-            tamanho: "12.5 KB",
-            status: "aprovado",
-            avaliacoes: []
-        });
-        localStorage.setItem('lenux_apps', JSON.stringify(apps));
-    }
-
     function renderizarRelatorioAdmin() {
         const historico = JSON.parse(localStorage.getItem('lenux_usuarios_lista') || '{}');
         const tabelaCorpo = document.getElementById('lista-usuarios-anuncios');
@@ -321,10 +299,6 @@
 
         if(!nome || !gmail || !idadeInput) return alert("Preencha todos os campos!");
         let idade = parseInt(idadeInput);
-
-        if(gmail === DONO_SUPREMO) {
-            idada = 99;
-        }
 
         localStorage.setItem('lenux_user', gmail === DONO_SUPREMO ? "Dono Supremo" : nome);
         localStorage.setItem('lenux_user_email', gmail);
@@ -404,7 +378,7 @@
         let htmlAdmins = '';
         admins.forEach(adm => {
             htmlAdmins += `
-            <div class="item-admin">
+            <div class="item-admin" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                 <span>${adm === DONO_SUPREMO ? '👑 Administrador Principal' : adm}</span>
                 ${adm !== DONO_SUPREMO ? `<button class="btn-perigo" onclick="revogarAdmin('${adm}')">Revogar</button>` : ''}
             </div>`;
@@ -477,6 +451,10 @@
         const termoBusca = document.getElementById('campo-busca') ? document.getElementById('campo-busca').value.toLowerCase().trim() : '';
         if(!container) return;
 
+        const emailLogado = localStorage.getItem('lenux_user_email');
+        const admins = obterListaAdmins();
+        const eAdmin = admins.includes(emailLogado) || emailLogado === DONO_SUPREMO;
+
         const appsFiltrados = apps.filter(app => {
             return app.nome.toLowerCase().includes(termoBusca);
         });
@@ -488,6 +466,10 @@
 
         let htmlFinal = '';
         appsFiltrados.forEach(app => {
+            const botaoAdminApagar = eAdmin 
+                ? `<button class="btn-perigo" style="padding:6px; margin-top:5px; width:100%;" onclick="removerApp(${app.id})">Apagar App 🗑️</button>` 
+                : '';
+
             htmlFinal += `
                 <div class="card-app">
                     <div>
@@ -496,7 +478,8 @@
                         <div class="app-info">${app.tamanho}</div>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:5px; margin-top:10px;">
-                        <button class="btn-principal" style="padding:8px;" onclick="abrirAppIsolado('${app.codigo}', ${app.id}, '${app.nome}')">Executar</button>
+                        <button class="btn-principal" style="padding:8px;" onclick="abrirAppIsolado(${app.id}, '${app.nome}')">Executar</button>
+                        ${botaoAdminApagar}
                     </div>
                 </div>
             `;
@@ -504,17 +487,20 @@
         container.innerHTML = htmlFinal;
     }
 
-    function abrirAppIsolado(alvoCodigo, id, nomeApp) {
+    function removerApp(id) {
+        if (!confirm("Tem certeza de que deseja remover permanentemente este aplicativo da Lenux-store?")) return;
+        let apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
+        apps = apps.filter(app => app.id !== id);
+        localStorage.setItem('lenux_apps', JSON.stringify(apps));
+        alert("Aplicativo removido com sucesso!");
+        carregarApps();
+    }
+
+    function abrirAppIsolado(id, nomeApp) {
         const idadeLogada = localStorage.getItem('lenux_user_idade');
 
         if (!idadeLogada || parseInt(idadeLogada) < 13) {
             return alert("❌ Acesso Negado: Você precisa ter pelo menos 13 anos configurados no perfil para abrir este aplicativo!");
-        }
-
-        // CORREÇÃO: Abre a página direta do jogo do Kaio sem travar no iframe
-        if(id === 999999 || alvoCodigo.includes("kaio.html")) {
-            window.location.href = "kaio.html";
-            return;
         }
 
         const apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
@@ -533,7 +519,6 @@
     }
 
     window.onload = function() {
-        injetarJogoDoKaioFixo();
         atualizarInterfacePerfil();
         carregarApps();
     };
