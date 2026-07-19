@@ -1,7 +1,8 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const path = require("path"); // Adicionado para gerenciar os caminhos de arquivos
+const path = require("path");
+const fs = require("fs"); // Importado para ler as pastas
 
 const app = express();
 const server = http.createServer(app);
@@ -11,12 +12,27 @@ const io = new Server(server, {
     }
 });
 
-// Serve os arquivos da pasta principal
+// LOG DE SEGURANÇA: Mostra no painel do Render quais arquivos existem no seu projeto
+console.log("--- ARQUIVOS ENCONTRADOS NO REPOSITÓRIO ---");
+console.log(fs.readdirSync(__dirname));
+console.log("-------------------------------------------");
+
 app.use(express.static("."));
 
-// ROTA FORÇADA: Garante que ao acessar o site, ele envie o index.html correto
+// Tenta enviar o arquivo independentemente de onde ele esteja ou como foi escrito
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    let caminhoArquivo = path.join(__dirname, 'index.html');
+    
+    // Se não achar em minúsculo, tenta com a primeira maiúscula
+    if (!fs.existsSync(caminhoArquivo)) {
+        caminhoArquivo = path.join(__dirname, 'Index.html');
+    }
+    
+    if (fs.existsSync(caminhoArquivo)) {
+        res.sendFile(caminhoArquivo);
+    } else {
+        res.status(404).send("<h1>Erro do Servidor: O arquivo 'index.html' nao foi encontrado na raiz do seu GitHub!</h1><p>Verifique o nome das pastas.</p>");
+    }
 });
 
 let jogadores = {};
@@ -26,29 +42,19 @@ io.on("connection", (socket) => {
 
     socket.on("criarSala", (codigo) => {
         socket.join(codigo);
-        jogadores[socket.id] = {
-            sala: codigo,
-            x: 100,
-            y: 100
-        };
+        jogadores[socket.id] = { sala: codigo, x: 100, y: 100 };
         socket.emit("salaCriada", codigo);
-        console.log("Sala criada:", codigo);
     });
 
     socket.on("entrarSala", (codigo) => {
         socket.join(codigo);
-        jogadores[socket.id] = {
-            sala: codigo,
-            x: 200,
-            y: 100
-        };
+        jogadores[socket.id] = { sala: codigo, x: 200, y: 100 };
         socket.emit("entrou", codigo);
         socket.to(codigo).emit("novoJogador", {
             id: socket.id,
             x: jogadores[socket.id].x,
             y: jogadores[socket.id].y
         });
-        console.log(socket.id, "entrou na sala", codigo);
     });
 
     socket.on("movimento", (dados)=>{
@@ -64,7 +70,6 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnect",()=>{
-        console.log("Jogador saiu:", socket.id);
         delete jogadores[socket.id];
     });
 });
