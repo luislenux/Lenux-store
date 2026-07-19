@@ -147,6 +147,13 @@
             display: inline-block;
             margin-bottom: 5px;
         }
+        code {
+            background: #1e293b;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #ff79c6;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -177,6 +184,16 @@
         <p style="font-size: 0.85rem; color: #94a3b8; margin-top: -10px; margin-bottom: 15px;">
             Nota: Seu aplicativo passará pela análise de segurança e revisão do Admin antes de ficar público na Lenux-store.
         </p>
+        
+        <div style="background: rgba(61, 220, 132, 0.08); border: 1px dashed var(--primary); padding: 15px; border-radius: 12px; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.5;">
+            <strong style="color: var(--primary); display: block; margin-bottom: 6px; font-size: 0.95rem;">🌐 Como criar Jogos Multiplayer aqui:</strong>
+            1. Inclua o script no seu HTML: <code>&lt;script src="/socket.io/socket.io.js"&gt;&lt;/script&gt;</code><br>
+            2. Conecte no seu código JS: <code>const socket = io();</code><br>
+            3. Entre numa sala ativa: <code>socket.emit("entrarSala", "nome_da_sala");</code><br>
+            4. Envie as ações: <code>socket.emit("movimento", { x: seuX, y: seuY });</code><br>
+            5. Receba dos outros: <code>socket.on("atualizarJogador", (dados) => { ... });</code>
+        </div>
+
         <input type="hidden" id="app-id-edicao" value="">
         <input type="text" id="app-nome" placeholder="Nome do App ou Jogo">
         <input type="text" id="app-imagem" placeholder="Emoji para o Ícone (Ex: 🎮, 🌐)">
@@ -246,10 +263,10 @@
 
     function injetarJogoDoKaioFixo() {
         let apps = JSON.parse(localStorage.getItem('lenux_apps') || '[]');
-        
+
         // Remove versões duplicadas ou antigas para não dar conflito
         apps = apps.filter(app => app.id !== 999999);
-        
+
         apps.unshift({
             id: 999999,
             nome: "A Caçada de Kaio",
